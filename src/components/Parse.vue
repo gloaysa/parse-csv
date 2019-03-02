@@ -1,19 +1,19 @@
 <template>
   <div class="parse">
-    <h1>Parse CSV to JSON</h1>
-    <input 
+    <h1>Conversor archivo CSV</h1>
+    <input
       id="fileInput"
       type="file"
       @change="upload">
-    <a
+    <button
       @click='save'
       type='button'
       download >
       Save
-    </a>
+    </button>
     <div class="body">
       <div class="entry">
-        <textarea 
+        <textarea
           class="entry-result"
           v-model='doc'
           placeholder="Type here">
@@ -32,7 +32,10 @@
     name: 'parse',
     data () {
       return {
-        doc: null
+        doc: null,
+        cups: null,
+        from: null,
+        to: null
       }
     },
     methods: {
@@ -42,10 +45,49 @@
         const reader = new FileReader()
         reader.onload = fileLoadedEvent => {
           Papa.parse(fileLoadedEvent.target.result, {
-            header: true,
+            header: false,
+            delimiter: ';',
+            skipEmptyLines: true,
             complete (results) {
-              console.log('complete', results)
-              that.doc = JSON.stringify(results.data, null, 2)
+              const HEADER = ['CUPS', 'Fecha', 'Hora', 'Consumo_kWh', 'Metodo_obtencion']
+
+              var data = results.data.map((dataHour) => {
+                dataHour = dataHour.map((dataHour) => {
+                  return dataHour.trim()
+                })
+
+                // Delete precio & consumo por horas
+                dataHour.splice(3, 2)
+                // Add CUPS to the beginning of columns
+                dataHour.unshift(that.cups)
+                // Convert from hW to kWh
+                var kWh = parseInt(dataHour[3]) / 1000
+                dataHour[3] = kWh.toString().replace(/\./g, ',')
+                // Convert date
+                dataHour[1] = tranformDate(dataHour[1])
+                // Add metodo de obtencion
+                dataHour.push('R')
+
+                return dataHour
+              })
+              data.unshift(HEADER)
+              function tranformDate (date) {
+                return date.replace(/(\d{4})-(\d{1,2})-(\d{1,2})/, function (match, y, m, d) {
+                  var newDate = d + '/' + m + '/' + y
+                  return newDate.toString()
+                })
+              }
+              that.doc = Papa.unparse(data)
+            },
+            beforeFirstChunk (chunk) {
+              let lines = chunk.split('\n')
+              that.cups = lines[0].split(',').pop().trim()
+              that.from = lines[1].split(',').pop().trim()
+              that.to = lines[2].split(',').pop().trim()
+              let lastLine = lines.length - 2
+              lines.splice(lastLine, 1)
+              lines.splice(0, 7)
+              return lines.join('\n').replace(/,/g, ';')
             },
             error (errors) {
               console.log('error', errors)
@@ -56,10 +98,10 @@
       },
       save () {
         const blob = new Blob([this.parseJSONtoCSV()], { type: 'text/csv' })
-        FileSaver.saveAs(blob, 'test.csv')
+        FileSaver.saveAs(blob, 'Consumo desde ' + this.from + ' hasta ' + this.to + '.csv')
       },
       parseJSONtoCSV () {
-        return Papa.unparse(this.doc)
+        return this.doc
       }
     }
   }
@@ -80,11 +122,6 @@
   .entry-result {
     width: 100%;
     height: 50vh;
-  }
-
-  .preview {
-    width: 40%;
-    text-align: left;
   }
 
 
