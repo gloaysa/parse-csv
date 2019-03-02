@@ -1,26 +1,87 @@
 <template>
-  <div class="parse">
-    <h1>Conversor archivo CSV</h1>
-    <input
-      id="fileInput"
-      type="file"
-      @change="upload">
-    <button
-      @click='save'
-      type='button'
-      download >
-      Save
-    </button>
-    <div class="body">
-      <div class="entry">
-        <textarea
-          class="entry-result"
-          v-model='doc'
-          placeholder="Type here">
-        </textarea>
+  <div class="container">
+    <h1 class="title is-1">Conversor archivo CSV</h1>
+
+    <div class="columns">
+      <div class="column">
+        <div class="container first-column">
+          <div class="file is-boxed is-centered"
+               v-bind:class="{'is-info': !loadedFile, 'is-primary': loadedFile}">
+            <label class="file-label">
+              <input class="file-input"
+                     type="file"
+                     name="resume"
+                     id="fileInput"
+                     @change="upload">
+              <span class="file-cta">
+              <span class="file-label" id="file-name">
+                Selecciona archivo CSV...
+              </span>
+            </span>
+            </label>
+          </div>
+        </div>
+
+
+        <div class="columns container">
+          <div class="column">
+
+            <p>
+              Esta aplicación web convierte el archivo CSV de <a href="https://www.endesaclientes.com">Endesa Clientes</a>
+              en un formato que puede leer el simulador de la <a href="https://facturaluz2.cnmc.es">CNMC</a>.
+              <hr>
+              Tras la conversión, se te mostrará en el panel de la derecha el archivo a descargar. Simplemente pulsa en
+              <strong>Guardar</strong> y el archivo se descargará para que pueda ser introducido en el simulador sin ningún error.
+              <hr>
+              En principio, ninguna edición es necesaria, adaptándose al modelo que se puede encontrar <a href="https://facturaluz2.cnmc.es/ejemplo.csv">aquí</a>.
+              No obstante, pulsando en el botón <strong>Editar</strong> se podrán realizar modificaciones en el archivo
+              de forma manual; no es recomendado si no sabes nada de archivos CSV y como funcionan.
+              <hr>
+              Ningún dato que se introduzca aquí se almacena. Es únicamente una aplicación que hice para mi propio uso
+              y que he decidido compartir con aquel que la necesite. El código fuente de la aplicación se puede encontrar
+              en mi <a href="https://github.com/gloaysa/parse-csv">repositorio de gitHub</a>, si te interesan estas cosas.
+            </p>
+
+          </div>
+          <div class="column">
+            <div class="control">
+          <textarea
+            class="textarea"
+            v-bind:class="{'is-warning': isEditable}"
+            rows = '20'
+            :readonly="!isEditable"
+            v-model='doc'>
+          </textarea>
+            </div>
+            <button
+              class="button is-large is-primary"
+              @click='save'
+              :disabled="!loadedFile"
+            >
+              Guardar
+            </button>
+            <button
+              class="button is-large is-warning"
+              @click='isEditable = !isEditable'
+              :disabled="!loadedFile"
+              v-show="!isEditable">
+              Editar
+            </button>
+            <button
+              class="button is-large is-info"
+              @click='isEditable = !isEditable'
+              v-show="isEditable">
+              Terminar edición
+            </button>
+          </div>
+        </div>
       </div>
+
+
     </div>
+
   </div>
+
 </template>
 
 <script>
@@ -33,9 +94,8 @@
     data () {
       return {
         doc: null,
-        cups: null,
-        from: null,
-        to: null
+        loadedFile: false,
+        isEditable: false
       }
     },
     methods: {
@@ -43,6 +103,8 @@
         const that = this
         const fileToLoad = event.target.files[0]
         const reader = new FileReader()
+        document.getElementById('file-name').innerHTML = event.target.files[0].name
+        this.loadedFile = true
         reader.onload = fileLoadedEvent => {
           Papa.parse(fileLoadedEvent.target.result, {
             header: false,
@@ -109,20 +171,7 @@
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-  .body {
-    display: flex;
-    justify-content: center;
-    margin-top: 30px;
+  .first-column {
+    margin-bottom: 20px;
   }
-
-  .entry {
-    width: 40%;
-  }
-
-  .entry-result {
-    width: 100%;
-    height: 50vh;
-  }
-
-
 </style>
